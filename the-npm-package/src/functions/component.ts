@@ -1,5 +1,6 @@
 import type { FluidComponent } from '../types/types';
 import { escapeFluidString } from './escapeFluidString.ts';
+import { fluidInlineValue } from './fluidInlineValue.ts';
 
 /** Prefix of a slot in the args of a story: `slot____default` */
 export const SLOT_PREFIX = 'slot____';
@@ -65,7 +66,8 @@ export function componentNameFromPath(path: string): string {
  *
  * `story` is the export name of the story (case-insensitive) or its `name`. `overrides` replaces single args of
  * that story, keyed as in the stories file (`slot____<name>` for slots; `null` or `''` drops the attribute):
- * `await component('de:card', 'Pirate', { link: '#', slot____default: 'Read more' })`.
+ * `await component('de:card', 'Pirate', { link: '#', slot____default: 'Read more' })`. An array or object arg
+ * becomes a Fluid inline array (`items="{0: 'a', 1: 'b'}"`).
  *
  * Arguments built by a transformer (`name__part` keys) have no Fluid form: write such a tag by hand with inline
  * Fluid values. Stories must not reference each other in a cycle; their module imports would wait forever.
@@ -140,6 +142,10 @@ function attributeValue(value: unknown): string {
   }
   if (typeof value === 'number') {
     return String(value);
+  }
+  if (typeof value === 'object') {
+    // an array or object as a Fluid inline array, like the code panel writes it
+    return escapeFluidString(fluidInlineValue(value), '"');
   }
   return escapeFluidString(String(value), '"');
 }

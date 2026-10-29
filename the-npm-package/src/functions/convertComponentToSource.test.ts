@@ -80,6 +80,23 @@ const testCases: Record<string, TestCase> = {
 {'slot\\\\' -> c:test(arg1: 'back\\\\slash')}`,
   },
   ///////////////////////////////////////////
+  withArrayArguments: {
+    component,
+    args: { items: ['it\'s', 'b'], options: { nested: { flag: true } } },
+    expected: `<html
+  xmlns:c="http://typo3.org/ns/Class"
+  data-namespace-typo3-fluid="true"
+>
+
+<c:test items="{0: 'it\\\\'s', 1: 'b'}" options="{nested: {flag: true}}"/>
+
+<!-- or -->
+
+{namespace c=Class}
+
+{c:test(items: {0: 'it\\'s', 1: 'b'}, options: {nested: {flag: true}})}`,
+  },
+  ///////////////////////////////////////////
   withMultipleSlots: {
     component,
     args: { slot____a: 'slotA', slot____b: 'slotB', slot____default: 'slotDefault' },

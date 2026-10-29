@@ -22,6 +22,7 @@ export const AllArguments: StoryObj = {
     optionalInt: 42,
     optionalFloat: 3.14159,
     optionalString: 'this is optional',
+    optionalArray: { tags: ['storybook', 'fluid'], nested: { flag: true } },
     optionalWithDefaultBool: false,
     optionalWithDefaultInt: -42,
     optionalWithDefaultFloat: -3.14159,

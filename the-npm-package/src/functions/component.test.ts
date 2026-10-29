@@ -110,6 +110,13 @@ describe('toFluid', () => {
     );
   });
 
+  it('writes arrays and objects as Fluid inline arrays, escaped for the attribute', (t: TestContext) => {
+    t.assert.strictEqual(
+      toFluid({ component: button, args: { items: ['it\'s', 'b'], options: { nested: { flag: true }, empty: [] } } }),
+      '<de:button items="{0: \'it\\\\\'s\', 1: \'b\'}" options="{nested: {flag: true}, empty: {}}" />',
+    );
+  });
+
   it('puts the default slot between the tags', (t: TestContext) => {
     t.assert.strictEqual(
       toFluid({ component: button, args: { link: '#', slot____default: 'Get started' } }),

@@ -1,6 +1,7 @@
 import type { FluidComponent } from '../types/types';
 import type { StrictArgs } from 'storybook/internal/csf';
 import { escapeFluidString } from './escapeFluidString.ts';
+import { fluidInlineValue } from './fluidInlineValue.ts';
 
 function convertValueToString(key: string, argType: { type?: { name?: 'int' } }, value: ArgumentValue, inline: boolean): string {
   const createValue = () => {
@@ -22,6 +23,11 @@ function convertValueToString(key: string, argType: { type?: { name?: 'int' } },
         return String(Number.parseInt(valueAsString, 10)); // Convert to integer
       }
       return String(Number.parseFloat(valueAsString)); // Convert to float
+    }
+    if (typeof value.value === 'object' && value.value !== null) {
+      // an array or object as a Fluid inline array; in an attribute, escaped for its double quotes
+      const inlineArray = fluidInlineValue(value.value);
+      return inline ? inlineArray : escapeFluidString(inlineArray, '"');
     }
     if (inline) {
       return '\'' + escapeFluidString(valueAsString, '\'') + '\''; // Escape for the single quotes of inline code

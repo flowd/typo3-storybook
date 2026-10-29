@@ -16,7 +16,7 @@ final readonly class RenderJob
         public Site $site,
         public SiteLanguage $siteLanguage,
         public ServerRequestInterface $renderRequest,
-        /** @var array<string, null|bool|int|float|string> */
+        /** @var array<string, null|bool|int|float|string|array<mixed>> */
         public array $rawArgs,
         public string $baseHref,
         public string $iframeContextId,

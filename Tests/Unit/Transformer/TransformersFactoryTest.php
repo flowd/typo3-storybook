@@ -6,6 +6,7 @@ namespace Andersundsehr\Storybook\Tests\Unit\Transformer;
 
 use Throwable;
 use Stringable;
+use Andersundsehr\Storybook\Dto\ViewHelperName;
 use Andersundsehr\Storybook\Service\ConfigService;
 use Andersundsehr\Storybook\Transformer\Transformer;
 use Andersundsehr\Storybook\Transformer\TransformerFactory;
@@ -17,7 +18,11 @@ use Psr\Container\ContainerInterface;
 use RuntimeException;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 use TYPO3Fluid\Fluid\Core\Component\ComponentDefinition;
+use TYPO3Fluid\Fluid\Core\Component\ComponentDefinitionProviderInterface;
+use TYPO3Fluid\Fluid\Core\Component\ComponentRendererInterface;
+use TYPO3Fluid\Fluid\Core\Component\ComponentTemplateResolverInterface;
 use TYPO3Fluid\Fluid\Core\ViewHelper\ArgumentDefinition;
+use TYPO3Fluid\Fluid\View\TemplatePaths;
 
 final class TransformersFactoryTest extends UnitTestCase
 {
@@ -72,6 +77,34 @@ final class TransformersFactoryTest extends UnitTestCase
         ];
     }
 
+    #[DataProvider('typesWithoutTransformerDataProvider')]
+    public function testArgumentsOfBasicAndArrayTypesNeedNoTransformer(string $type): void
+    {
+        $transformers = $this->createSubject()->get($this->createCollection($type), new ViewHelperName('storybook:test'));
+
+        self::assertSame([], $transformers->arguments);
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public static function typesWithoutTransformerDataProvider(): array
+    {
+        return [
+            'string' => ['string'],
+            'array' => ['array'],
+            'typed list' => ['string[]'],
+        ];
+    }
+
+    public function testArgumentsOfOtherTypesNeedATransformer(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(6790927084);
+
+        $this->createSubject()->get($this->createCollection(Stringable::class), new ViewHelperName('storybook:test'));
+    }
+
     private function createSubject(): TransformersFactory
     {
         $transformerFactory = new TransformerFactory(new class implements ContainerInterface {
@@ -91,6 +124,54 @@ final class TransformersFactoryTest extends UnitTestCase
             $transformerFactory,
             $this->createStub(ConfigService::class),
         );
+    }
+
+    /**
+     * A collection with one component of one argument of the given type and no transformer file
+     */
+    private function createCollection(string $argumentType): ComponentTemplateResolverInterface&ComponentDefinitionProviderInterface
+    {
+        $componentDefinition = $this->createComponentDefinition($argumentType);
+        $componentRenderer = $this->createStub(ComponentRendererInterface::class);
+
+        return new readonly class ($componentDefinition, $componentRenderer) implements ComponentTemplateResolverInterface, ComponentDefinitionProviderInterface {
+            public function __construct(
+                private ComponentDefinition $componentDefinition,
+                private ComponentRendererInterface $componentRenderer,
+            ) {
+            }
+
+            public function getTemplatePaths(): TemplatePaths
+            {
+                $templatePaths = new TemplatePaths();
+                $templatePaths->setTemplatePathAndFilename(__DIR__ . '/Fixtures/Test.html');
+
+                return $templatePaths;
+            }
+
+            /**
+             * @return array<string, mixed>
+             */
+            public function getAdditionalVariables(string $viewHelperName): array
+            {
+                return [];
+            }
+
+            public function resolveTemplateName(string $viewHelperName): string
+            {
+                return 'Test';
+            }
+
+            public function getComponentDefinition(string $viewHelperName): ComponentDefinition
+            {
+                return $this->componentDefinition;
+            }
+
+            public function getComponentRenderer(): ComponentRendererInterface
+            {
+                return $this->componentRenderer;
+            }
+        };
     }
 
     private function createComponentDefinition(string $targetType): ComponentDefinition

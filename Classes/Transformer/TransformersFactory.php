@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Andersundsehr\Storybook\Transformer;
 
 use Andersundsehr\Storybook\Dto\ViewHelperName;
+use Andersundsehr\Storybook\Service\ArgTypesService;
 use Andersundsehr\Storybook\Service\ConfigService;
 use DateTime;
 use DateTimeImmutable;
@@ -34,6 +35,7 @@ final readonly class TransformersFactory
         'float',
         'double',
         'string',
+        'array',
         DateTime::class,
         DateTimeImmutable::class,
         DateTimeInterface::class,
@@ -87,7 +89,8 @@ final readonly class TransformersFactory
             }
 
             $type = $argumentDefinition->getType();
-            if (in_array($type, self::DEFAULT_SUPPORTED_TYPES, true)) {
+            if (in_array($type, self::DEFAULT_SUPPORTED_TYPES, true) || ArgTypesService::isArrayType($type)) {
+                // arrays come from the object control as they are, see ComponentDataFactory
                 continue;
             }
 

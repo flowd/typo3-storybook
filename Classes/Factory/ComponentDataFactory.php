@@ -22,8 +22,10 @@ use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
 use function array_filter;
 use function array_keys;
 use function enum_exists;
+use function gettype;
 use function in_array;
 use function is_array;
+use function is_scalar;
 
 final readonly class ComponentDataFactory
 {
@@ -47,6 +49,13 @@ final readonly class ComponentDataFactory
         foreach ($renderJob->rawArgs as $key => $value) {
             if (str_starts_with((string)$key, self::SLOT_PREFIX)) {
                 $slotName = substr((string)$key, strlen(self::SLOT_PREFIX));
+                if (!is_scalar($value) && $value !== null) {
+                    throw new RuntimeException(
+                        'The slot "' . $slotName . '" must be a string, got ' . gettype($value) . '. Slots take text or Fluid, only arguments take arrays.',
+                        3177405166
+                    );
+                }
+
                 $slots[$slotName] = $this->createSlot($slotName, (string)$value, $renderingContext);
                 continue;
             }
@@ -156,7 +165,7 @@ final readonly class ComponentDataFactory
             );
         }
 
-        // we do not convert the other types, fluid dose some and for others it throws an error
+        // arrays (the object control) and the other types stay as they are: Fluid converts some and rejects the rest
         return $value;
     }
 
