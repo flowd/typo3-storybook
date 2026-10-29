@@ -50,7 +50,7 @@ jobs:
         php: [ '8.3', '8.4', '8.5' ]
         typo3: [ '13', '14' ]
         # not implemented yet:
-        storybook: [ '9.0' ]
+        storybook: [ '10.6' ]
     env:
       PHP_IMAGE_VERSION: ${{ matrix.php }}
       TYPO3_VERSION: ${{ matrix.typo3 }}

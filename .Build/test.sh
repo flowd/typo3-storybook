@@ -10,8 +10,30 @@ export APPLICATION_UID=$(id -u)
 
 export COMPOSE_PROJECT_NAME=testing-storybook
 export TYPO3_VERSION=${TYPO3_VERSION:-13.4.15}
+# The pluswerk image is published for amd64 only. On arm64 hosts (Apple Silicon) the multi-arch base image it is
+# built from is used instead, picked by `uname -m`. Force one of them with `--amd64` or `--arm64` anywhere in the
+# arguments, e.g. `bash test.sh --amd64 playwright` runs the CI image through Rosetta.
+# TYPO3_IMAGE / TYPO3_PLATFORM in the environment still win over both.
+ARCH=$(uname -m)
+ARGS=()
+for arg in "$@"; do
+  case $arg in
+    --arm64) ARCH=arm64 ;;
+    --amd64) ARCH=x86_64 ;;
+    *) ARGS+=("$arg") ;;
+  esac
+done
+set -- ${ARGS[@]+"${ARGS[@]}"}
+export PHP_IMAGE_VERSION=${PHP_IMAGE_VERSION:-8.4}
+if [[ "$ARCH" == "arm64" || "$ARCH" == "aarch64" ]]; then
+  export TYPO3_IMAGE=${TYPO3_IMAGE:-webdevops/php-apache-dev:${PHP_IMAGE_VERSION}-alpine}
+  export TYPO3_PLATFORM=${TYPO3_PLATFORM:-linux/arm64}
+else
+  export TYPO3_IMAGE=${TYPO3_IMAGE:-ghcr.io/pluswerk/php-dev:apache-${PHP_IMAGE_VERSION}-alpine}
+  export TYPO3_PLATFORM=${TYPO3_PLATFORM:-linux/amd64}
+fi
 # not implemented yet:
-export STORYBOOK_VERSION=${STORYBOOK_VERSION:-9.0.0}
+export STORYBOOK_VERSION=${STORYBOOK_VERSION:-10.6.5}
 
 if [ -S /tmp/.X11-unix/X0 ]; then
   export X11_SOCKET=/tmp/.X11-unix
@@ -104,8 +126,20 @@ function testFunction {
        watch 'bash test.sh copyToDev'
        return
        ;;
+     npmLock)
+       # regenerate both package-lock.json files with the npm of the CI image.
+       # The dummy project links the-npm-package from vendor/ and its lockfile records the dependencies of that
+       # linked package: without the vendor copy npm writes an empty link and `npm ci` fails later.
+       requireComposer
+       testFunction copyToDev
+       COMPOSE_PROJECT_NAME=testing-storybook docker compose -f test.docker-compose.yml run --rm --remove-orphans --no-deps playwright su ubuntu -c 'cd ../../the-npm-package && rm -f package-lock.json && npm install --package-lock-only --ignore-scripts && cd ../Documentation/dummy-project && rm -f package-lock.json && npm install --package-lock-only --ignore-scripts'
+       return
+       ;;
      copyToDev)
-       rsync -av --delete --exclude-from=exclude-watchMode.txt ../ ../Documentation/dummy-project/vendor/andersundsehr/storybook/
+       # --chmod: the copy is written by the host user but later modified by the container user `ubuntu` (uid 1000).
+       # On Linux CI (runner uid 1001) they differ: `npm ci` in the dummy project runs the prepare script of the linked
+       # package and tsc overwrites dist/ in the copy, which fails with "permission denied" on 644 files.
+       rsync -av --delete --chmod=ugo+rwX --exclude-from=exclude-watchMode.txt ../ ../Documentation/dummy-project/vendor/andersundsehr/storybook/
        return
        ;;
      reset)

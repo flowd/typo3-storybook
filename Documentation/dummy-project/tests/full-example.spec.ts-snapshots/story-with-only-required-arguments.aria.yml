@@ -1,12 +1,13 @@
-- button "Zoom in":
-  - img
-- button "Zoom out":
-  - img
-- button "Reset zoom":
-  - img
+- heading "Copy heading URL to address bar Only Required" [level=3]:
+  - link "Copy heading URL to address bar":
+    - /url: "#only-required"
+  - text: ""
 - text: all variables
 - group: /array\(9 items\) requiredArgument => 'this is required' \(\d+ chars\) optionalBool => NULL optionalInt => NULL optionalFloat => NULL optionalString => NULL optionalWithDefaultBool => FALSE optionalWithDefaultInt => \d+ \(integer\) optionalWithDefaultFloat => \d+\.\d+ \(double\) optionalWithDefaultString => 'Default String' \(\d+ chars\)/
 - text: "Slot Content: Translation: The default Header Comment. EN"
-- button "Hide code"
-- text: "<html xmlns:de=\"http://typo3.org/ns/Andersundsehr/DummyExtension/ComponentCollection\" data-namespace-typo3-fluid=\"true\" > <de:fullExample requiredArgument=\"this is required\"/> <!-- or --> {namespace de=Andersundsehr\\DummyExtension\\ComponentCollection} {de:fullExample(requiredArgument: 'this is required')}"
-- button "Copy"
+- switch "Show code":
+  - img
+  - text: ""
+- button "Copy code":
+  - img
+  - text: ""
