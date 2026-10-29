@@ -33,6 +33,7 @@ It is designed to be a quick introduction to the most important concepts and fea
     ViteIntegration
     FirstStorybookStory
     Transformers
+    Slots
     *
 
 ..  card-grid::
@@ -69,3 +70,7 @@ It is designed to be a quick introduction to the most important concepts and fea
     ..  card:: :ref:`Transformers <transformers>`
 
         Learn how to use transformers to document more complex arguments in your stories.
+
+    ..  card:: :ref:`Slots <slots>`
+
+        Learn how a slot holds another component and how stories build on each other.

@@ -45,7 +45,7 @@ final readonly class RenderAction implements ActionInterface
 
         $componentDefinition = $collection->getComponentDefinition($renderJob->viewHelper->name);
 
-        $variables = $this->renderVariablesService->transform($componentDefinition, $transformers, $renderJob);
+        $variables = $this->renderVariablesService->transform($componentDefinition, $transformers, $renderJob, $renderingContext);
 
         $componentRenderer = $collection->getComponentRenderer();
         $html = $componentRenderer->renderComponent($renderJob->viewHelper->name, $variables->arguments, $variables->slots, $renderingContext);

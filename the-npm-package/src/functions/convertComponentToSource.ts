@@ -1,5 +1,6 @@
 import type { FluidComponent } from '../types/types';
 import type { StrictArgs } from 'storybook/internal/csf';
+import { escapeFluidString } from './escapeFluidString.ts';
 
 function convertValueToString(key: string, argType: { type?: { name?: 'int' } }, value: ArgumentValue, inline: boolean): string {
   const createValue = () => {
@@ -23,9 +24,9 @@ function convertValueToString(key: string, argType: { type?: { name?: 'int' } },
       return String(Number.parseFloat(valueAsString)); // Convert to float
     }
     if (inline) {
-      return '\'' + valueAsString.replace(/'/g, '\\\'') + '\''; // Escape single quotes for inline code
+      return '\'' + escapeFluidString(valueAsString, '\'') + '\''; // Escape for the single quotes of inline code
     }
-    return valueAsString.replace(/"/g, '\\"'); // Escape double quotes for attributes
+    return escapeFluidString(valueAsString, '"'); // Escape for the double quotes of attributes
   };
 
   if (inline) {
@@ -42,7 +43,7 @@ function inlineCode(viewHelperArguments: Arguments, component: FluidComponent, d
   let source = '{';
 
   if (defaultSlotContent) {
-    defaultSlotContent = defaultSlotContent.replace(/'/g, '\\\''); // Escape single quotes for inline code
+    defaultSlotContent = escapeFluidString(defaultSlotContent, '\''); // Escape for the single quotes of inline code
     source += `'${defaultSlotContent}' -> `;
   }
   source += `${component.fullName}(`;

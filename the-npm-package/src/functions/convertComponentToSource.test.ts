@@ -61,6 +61,25 @@ const testCases: Record<string, TestCase> = {
 {'default \\'"slot' -> c:test(arg1: 'value\\'"1', arg2: 'value2')}`,
   },
   ///////////////////////////////////////////
+  withBackslashes: {
+    component,
+    args: { arg1: 'back\\slash', slot____default: 'slot\\' },
+    expected: `<html
+  xmlns:c="http://typo3.org/ns/Class"
+  data-namespace-typo3-fluid="true"
+>
+
+<c:test arg1="back\\\\slash">
+  slot\\
+</c:test>
+
+<!-- or -->
+
+{namespace c=Class}
+
+{'slot\\\\' -> c:test(arg1: 'back\\\\slash')}`,
+  },
+  ///////////////////////////////////////////
   withMultipleSlots: {
     component,
     args: { slot____a: 'slotA', slot____b: 'slotB', slot____default: 'slotDefault' },

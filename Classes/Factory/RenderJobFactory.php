@@ -8,6 +8,7 @@ use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use Andersundsehr\Storybook\Dto\RenderJob;
 use Andersundsehr\Storybook\Dto\ViewHelperName;
+use Andersundsehr\Storybook\Service\ConfigService;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Context\Context;
@@ -25,7 +26,9 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 use TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController;
 
+use function is_string;
 use function json_decode;
+use function str_starts_with;
 use function trim;
 use function version_compare;
 
@@ -38,6 +41,7 @@ final readonly class RenderJobFactory
         private Context $context,
         private FrontendUserAuthentication $frontendUserAuthentication,
         private SanitizerBuilderFactory $sanitizerBuilderFactory,
+        private ConfigService $configService,
     ) {
     }
 
@@ -179,8 +183,15 @@ final readonly class RenderJobFactory
      */
     private function sanitizeArguments(array $storybookArguments): array
     {
+        $renderSlotsAsFluid = $this->configService->renderSlotsAsFluid();
         $result = [];
         foreach ($storybookArguments as $key => $value) {
+            if ($renderSlotsAsFluid && is_string($value) && str_starts_with((string)$key, ComponentDataFactory::SLOT_PREFIX)) {
+                // Fluid source, parsed by ComponentDataFactory: the sanitizer would encode its tags as text
+                $result[$key] = $value;
+                continue;
+            }
+
             $result[$key] = match (gettype($value)) {
                 'integer', 'double', 'boolean', 'NULL' => $value,
                 'string' => $this->sanitizerBuilderFactory->build('default')->build()->sanitize($value),
