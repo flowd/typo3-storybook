@@ -16,6 +16,7 @@ use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 use TYPO3Fluid\Fluid\Core\Component\ComponentDefinition;
 use TYPO3Fluid\Fluid\Core\Rendering\RenderingContext;
+use TYPO3Fluid\Fluid\Core\ViewHelper\ArgumentDefinition;
 
 final class ComponentDataFactoryTest extends UnitTestCase
 {
@@ -41,6 +42,23 @@ final class ComponentDataFactoryTest extends UnitTestCase
         self::assertSame('World', $componentData->slots['footer']());
     }
 
+    public function testArrayArgumentsReachTheComponentAsTheyAre(): void
+    {
+        $items = ['first', 'nested' => ['flag' => true, 'count' => 2]];
+
+        $componentData = $this->transform(false, ['items' => $items, 'title' => 'Hello']);
+
+        self::assertSame(['items' => $items, 'title' => 'Hello'], $componentData->arguments);
+    }
+
+    public function testArraySlotContentIsRejected(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(3177405166);
+
+        $this->transform(false, ['slot____default' => ['not', 'fluid']]);
+    }
+
     public function testFluidErrorsNameTheSlot(): void
     {
         $componentData = $this->transform(true, ['slot____footer' => '</f:if>']);
@@ -53,7 +71,7 @@ final class ComponentDataFactoryTest extends UnitTestCase
     }
 
     /**
-     * @param array<string, null|bool|int|float|string> $rawArgs
+     * @param array<string, mixed> $rawArgs
      */
     private function transform(bool $renderSlotsAsFluid, array $rawArgs, ?RenderingContext $renderingContext = null): ComponentData
     {
@@ -72,7 +90,15 @@ final class ComponentDataFactoryTest extends UnitTestCase
         );
 
         return (new ComponentDataFactory($configService))->transform(
-            new ComponentDefinition('component', [], false, ['default', 'footer']),
+            new ComponentDefinition(
+                'component',
+                [
+                    'items' => new ArgumentDefinition('items', 'array', 'The items', false),
+                    'title' => new ArgumentDefinition('title', 'string', 'The title', false),
+                ],
+                false,
+                ['default', 'footer'],
+            ),
             new Transformers([], 'none'),
             $renderJob,
             $renderingContext ?? new RenderingContext(),

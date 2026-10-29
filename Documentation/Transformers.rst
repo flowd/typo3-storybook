@@ -11,6 +11,10 @@ Transformers are a way to document more complex arguments in your Storybook stor
 The big problem with complex arguments is that they are not easily documented in the Storybook UI.
 Storybook only supports basic types like `string`, `number`, `boolean`, etc.
 
+Arrays need no Transformer: an argument of type `array` or `<type>[]` (`string[]`, `Foo[]`) gets Storybook's
+`object` control, a JSON editor, and reaches the component as a PHP array, nested values included. The code panel
+and `component()` write such a value as a Fluid inline array (`items="{0: 'a', 1: 'b'}"`).
+
 The Storybook extension also automaticall creates Selects for PHP enums and sets the Storybook type to `select`.
 For :php:`DateTime`, :php:`DateTimeImmutable` and :php:`DateTimeInterface` it creates a date picker.
 
@@ -48,7 +52,7 @@ it looks like this:
 
 As you can see the Transformers can be really simple.
 A TypeTransformer is any Function on any Service that has the `#[TypeTransformer]` attribute.
-It can take any number of arguments, the argument types need to be basic types like `string`, `int`, `bool`, etc. or `DateTime`, `DateTimeImmutable`, `DateTimeInterface`, or any :php:`UnitEnum`.
+It can take any number of arguments, the argument types need to be basic types like `string`, `int`, `bool`, `array`, etc. or `DateTime`, `DateTimeImmutable`, `DateTimeInterface`, or any :php:`UnitEnum`.
 
 The return type of the function is the complex type that you want to transform to.
 

@@ -26,6 +26,9 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 use TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController;
 
+use function array_map;
+use function gettype;
+use function is_array;
 use function is_string;
 use function json_decode;
 use function str_starts_with;
@@ -192,16 +195,29 @@ final readonly class RenderJobFactory
                 continue;
             }
 
-            $result[$key] = match (gettype($value)) {
-                'integer', 'double', 'boolean', 'NULL' => $value,
-                'string' => $this->sanitizerBuilderFactory->build('default')->build()->sanitize($value),
-                default => throw new RuntimeException(
-                    'Invalid argument type for key "' . $key . '". Expected string, integer, double, boolean or NULL, got: ' . gettype($value),
-                    8927775903
-                ),
-            };
+            $result[$key] = $this->sanitizeValue((string)$key, $value);
         }
 
         return $result;
+    }
+
+    /**
+     * Strings through the HTML sanitizer, the other scalars and null as they are, an array (the object control of an
+     * array argument) element by element, keys kept
+     */
+    private function sanitizeValue(string $key, mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map(fn(mixed $element): mixed => $this->sanitizeValue($key, $element), $value);
+        }
+
+        return match (gettype($value)) {
+            'integer', 'double', 'boolean', 'NULL' => $value,
+            'string' => $this->sanitizerBuilderFactory->build('default')->build()->sanitize($value),
+            default => throw new RuntimeException(
+                'Invalid argument type for key "' . $key . '". Expected string, integer, double, boolean, NULL or array, got: ' . gettype($value),
+                8927775903
+            ),
+        };
     }
 }

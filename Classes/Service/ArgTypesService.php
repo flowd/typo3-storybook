@@ -18,7 +18,12 @@ use function array_filter;
 use function array_keys;
 use function implode;
 use function in_array;
+use function is_array;
+use function json_encode;
+use function str_ends_with;
 use function strlen;
+
+use const JSON_THROW_ON_ERROR;
 
 final readonly class ArgTypesService
 {
@@ -113,6 +118,9 @@ final readonly class ArgTypesService
             $controlType = 'text';
         } elseif (in_array($argumentDefinition->getType(), [DateTime::class, DateTimeImmutable::class, DateTimeInterface::class], true)) {
             $controlType = 'date';
+        } elseif (self::isArrayType($argumentDefinition->getType())) {
+            // Storybook's JSON editor; the value reaches the component as a PHP array, nested values included
+            $controlType = 'object';
         } elseif (enum_exists($argumentDefinition->getType())) {
             $controlType = 'select';
             foreach ($argumentDefinition->getType()::cases() as $case) {
@@ -156,6 +164,8 @@ final readonly class ArgTypesService
             }
         }
 
+        $defaultValue = $argumentDefinition->getDefaultValue();
+
         return [
             'description' => $descriptionPrefix . $argumentDefinition->getDescription(),
             'name' => $argumentDefinition->getName(),
@@ -174,10 +184,19 @@ final readonly class ArgTypesService
                 'category' => 'argument',
                 'subcategory' => $subCategory,
                 'defaultValue' => [
-                    'summary' => $argumentDefinition->getDefaultValue(),
+                    // an array default as JSON, the summary is shown as text
+                    'summary' => is_array($defaultValue) ? json_encode($defaultValue, JSON_THROW_ON_ERROR) : $defaultValue,
                 ],
             ],
         ];
+    }
+
+    /**
+     * Fluid's array types, as its argument processors see them: `array` and `<type>[]` (`string[]`, `Foo[]`)
+     */
+    public static function isArrayType(string $type): bool
+    {
+        return $type === 'array' || str_ends_with($type, '[]');
     }
 
     public static function getCaseValue(UnitEnum $case): string
