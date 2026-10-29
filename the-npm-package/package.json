@@ -46,6 +46,7 @@
     "test": "node --test --experimental-strip-types **/*.test.{cts,mts,ts}",
     "test:watch": "npm run test -- --watch",
     "build": "tsc",
+    "prepare": "npm run build",
     "prepublishOnly": "cp ../README.md . && npm run build"
   },
   "files": [
