@@ -9,6 +9,13 @@ const config: StorybookConfig = {
 
   core: {
     disableTelemetry: true,
+    disableWhatsNewNotifications: true,
+  },
+
+  // optional: hides the onboarding checklist of Storybook 10 in the sidebar and menu
+  features: {
+    sidebarOnboardingChecklist: false,
+    menuOnboardingChecklist: false,
   },
 
   env: (envs) => {

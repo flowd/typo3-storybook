@@ -1,15 +1,20 @@
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Entry, PresetProperty } from 'storybook/internal/types';
-import { createRequire } from 'module';
 import { viteFinal } from './functions/viteFinal.ts';
 
-const require = createRequire(import.meta.url);
-
+/**
+ * The directory of a package, resolved from this package: Storybook reads the addon's `exports` from there,
+ * so the addons work with a package manager that does not hoist them (pnpm, nested installs).
+ */
 function getAbsolutePath<I extends string>(value: I): I {
-  return dirname(require.resolve(join(value, 'package.json'))) as any;
+  return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`))) as I;
 }
 
-export const addons = ['@storybook/addon-docs', '@storybook/addon-a11y'];
+export const addons: PresetProperty<'addons'> = [
+  getAbsolutePath('@storybook/addon-docs'),
+  getAbsolutePath('@storybook/addon-a11y'),
+];
 
 /**
  * We want storybook to not use your local vite config.
@@ -17,9 +22,13 @@ export const addons = ['@storybook/addon-docs', '@storybook/addon-a11y'];
  */
 export { viteFinal };
 
+/**
+ * Storybook 10 wants the builder as a fully resolved entry point and the renderer as its preset file.
+ * @see https://github.com/storybookjs/storybook/blob/next/MIGRATION.md#corebuilder-configuration-must-be-a-fully-resolved-path
+ */
 export const core: PresetProperty<'core'> = {
-  builder: getAbsolutePath('@storybook/builder-vite'),
-  renderer: getAbsolutePath('@storybook/server'),
+  builder: import.meta.resolve('@storybook/builder-vite'),
+  renderer: import.meta.resolve('@storybook/server/preset'),
   disableTelemetry: true,
 };
 
@@ -27,8 +36,8 @@ export const previewAnnotations: PresetProperty<'previewAnnotations'> = async (e
   const docsEnabled = Object.keys(await options.presets.apply('docs', {}, options)).length > 0;
 
   return entry
-    .concat(require.resolve('./entry-preview'))
-    .concat(docsEnabled ? [require.resolve('./entry-preview-docs')] : []);
+    .concat(fileURLToPath(import.meta.resolve('./entry-preview.js')))
+    .concat(docsEnabled ? [fileURLToPath(import.meta.resolve('./entry-preview-docs.js'))] : []);
 };
 
 export const tags = ['autodocs'];

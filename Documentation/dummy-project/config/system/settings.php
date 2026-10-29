@@ -34,6 +34,7 @@ return [
         ],
         'storybook' => [
             'excludeArguments' => '',
+            'renderSlotsAsFluid' => '0',
         ],
     ],
     'FE' => [

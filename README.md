@@ -230,11 +230,31 @@ cd .Build/
 bash test.sh playwright:ui # (X11 forwarding required)
 ```
 
+After changing dependencies in `the-npm-package/package.json` or `Documentation/dummy-project/package.json`,
+regenerate both `package-lock.json` files with the npm of the CI image:
+```bash
+cd .Build/
+bash test.sh npmLock
+```
+The lockfile of the dummy project records the dependencies of the linked npm package, so it needs the vendor copy
+of the extension; `npmLock` takes care of that. A lockfile written without it makes `npm ci` fail in CI.
+
+Run npm for `the-npm-package` only through `test.sh` (`buildTheNpmPackage`, `watchMode`, `npmLock`), not on the host:
+TypeScript 7 installs a native `tsc` binary for the platform of the last `npm ci`, so a host install and the container
+install would overwrite each other's `node_modules`.
+
 ## Troubleshooting: Known issues, troubleshooting, FAQ
+
+- **Apple Silicon**: `ghcr.io/pluswerk/php-dev` is published for `linux/amd64` only, and under Rosetta its Apache does not
+  come up (`container testing-storybook-typo3-1 is unhealthy`). `test.sh` therefore uses the multi-arch base image
+  `webdevops/php-apache-dev` on arm64 hosts automatically. Force one of the two with `bash test.sh --amd64 …` or
+  `bash test.sh --arm64 …`; after switching run `bash test.sh down` so the `typo3` container is recreated.
 
 ## Changelog: Important changes and versions
 
-until now there are no breaking changes, but the extension is still in development.
+- **Storybook 10**: `@andersundsehr/storybook-typo3` now builds on Storybook `^10.6.5`, which needs Node.js 22.12 or newer
+  and loads `.storybook/main.*` as ESM (see the [Storybook 10 migration notes](https://github.com/storybookjs/storybook/blob/next/MIGRATION.md#from-version-9x-to-1000)).
+  Update the npm package together with the extension.
 
 ## License and Authors: License type, contributors, contact information
 
