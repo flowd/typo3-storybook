@@ -86,8 +86,9 @@ argument overrides single args of that story, keyed as in the stories file:
 
 The stories file of a component is found by its path: ``componentNameFromPath()`` takes the path below
 ``Components/`` without the extension as lowercase dot path, and a file named after its directory stands for that
-directory (``Components/Card/Card.stories.ts`` and ``Components/Card.stories.ts`` both belong to ``de:card``,
-``Components/Atom/Button/Button.stories.js`` to ``de:atom.button``). For another layout, pass your own mapping:
+directory (``Components/Card/Card.stories.ts`` or ``Components/Card.stories.ts`` belongs to ``de:card``,
+``Components/Atom/Button/Button.stories.js`` to ``de:atom.button``). ``component()`` rejects a name that several
+stories files map to. For another layout, pass your own mapping:
 
 ..  code-block:: ts
 

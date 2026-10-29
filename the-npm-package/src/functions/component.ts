@@ -1,4 +1,5 @@
 import type { FluidComponent } from '../types/types';
+import { escapeFluidString } from './escapeFluidString.ts';
 
 /** Prefix of a slot in the args of a story: `slot____default` */
 export const SLOT_PREFIX = 'slot____';
@@ -22,6 +23,7 @@ export type StoryModuleLoader = () => Promise<unknown>;
 export interface ComponentOptions {
   /**
    * The component name without namespace of a stories file, from its path as `import.meta.glob` gives it.
+   * Every stories file needs its own name: `component()` rejects a name that several files map to.
    * Default: `componentNameFromPath`.
    */
   componentName?: (path: string) => string;
@@ -115,16 +117,23 @@ export function toFluid(target: ComponentTarget): string {
   return `${openTag}>${children}</${tag}>`;
 }
 
-/** Stories file loaders keyed by component name */
-function indexStoryFiles(storyFiles: Record<string, StoryModuleLoader>, componentName: (path: string) => string): Map<string, StoryModuleLoader> {
-  const index = new Map<string, StoryModuleLoader>();
+/** A stories file as `import.meta.glob` gives it */
+interface StoryFile {
+  path: string;
+  load: StoryModuleLoader;
+}
+
+/** Stories files keyed by component name; a name that several files map to is rejected when it is requested */
+function indexStoryFiles(storyFiles: Record<string, StoryModuleLoader>, componentName: (path: string) => string): Map<string, StoryFile[]> {
+  const index = new Map<string, StoryFile[]>();
   for (const [path, load] of Object.entries(storyFiles)) {
-    index.set(componentName(path), load);
+    const name = componentName(path);
+    index.set(name, [...(index.get(name) ?? []), { path, load }]);
   }
   return index;
 }
 
-// Fluid literals for booleans, quotes escaped like the code panel does; `{` in a string stays Fluid syntax
+// Fluid literals for booleans, strings escaped for the quotes like the code panel does; `{` in a string stays Fluid syntax
 function attributeValue(value: unknown): string {
   if (typeof value === 'boolean') {
     return `{${value}}`;
@@ -132,16 +141,21 @@ function attributeValue(value: unknown): string {
   if (typeof value === 'number') {
     return String(value);
   }
-  return String(value).replace(/"/g, '\\"');
+  return escapeFluidString(String(value), '"');
 }
 
-async function loadStory(index: Map<string, StoryModuleLoader>, name: string, story: string): Promise<ComponentTarget> {
+async function loadStory(index: Map<string, StoryFile[]>, name: string, story: string): Promise<ComponentTarget> {
   const componentName = name.slice(name.indexOf(':') + 1);
-  const load = index.get(componentName);
-  if (!load) {
+  const files = index.get(componentName) ?? [];
+  const [file] = files;
+  if (file === undefined) {
     throw new Error(`No stories file for "${name}": none of the stories files maps to "${componentName}"`);
   }
-  const storiesModule = await load();
+  if (files.length > 1) {
+    const paths = files.map((storyFile: StoryFile): string => storyFile.path).join(', ');
+    throw new Error(`Several stories files for "${name}" map to "${componentName}": ${paths}`);
+  }
+  const storiesModule = await file.load();
   if (!isStoryModule(storiesModule)) {
     throw new Error(`The stories file found for "${name}" has no component in its default export`);
   }

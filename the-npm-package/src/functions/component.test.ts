@@ -103,6 +103,13 @@ describe('toFluid', () => {
     t.assert.strictEqual(toFluid({ component: button, args: { title: 'Say "hi"' } }), '<de:button title="Say \\"hi\\"" />');
   });
 
+  it('escapes backslashes in attribute values, as Fluid unquotes them', (t: TestContext) => {
+    t.assert.strictEqual(
+      toFluid({ component: button, args: { title: 'C:\\dir\\', text: 'a\\"b' } }),
+      '<de:button title="C:\\\\dir\\\\" text="a\\\\\\"b" />',
+    );
+  });
+
   it('puts the default slot between the tags', (t: TestContext) => {
     t.assert.strictEqual(
       toFluid({ component: button, args: { link: '#', slot____default: 'Get started' } }),
@@ -197,6 +204,18 @@ describe('component', () => {
 
     await t.assert.rejects(noComponent('de:icon', 'Default'), {
       message: 'The stories file found for "de:icon" has no component in its default export',
+    });
+  });
+
+  it('rejects a component that several stories files map to', async (t: TestContext) => {
+    const ambiguous = createComponent(storyFiles({
+      '../Components/Button.stories.ts': buttonStories,
+      '../Components/Button/Button.stories.ts': buttonStories,
+    }));
+
+    await t.assert.rejects(ambiguous('de:button', 'Primary'), {
+      message: 'Several stories files for "de:button" map to "button": '
+        + '../Components/Button.stories.ts, ../Components/Button/Button.stories.ts',
     });
   });
 
