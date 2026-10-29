@@ -8,13 +8,16 @@ use TYPO3Fluid\Fluid\Core\ViewHelper\ArgumentDefinition;
 use Andersundsehr\Storybook\Dto\ComponentData;
 use Andersundsehr\Storybook\Dto\RenderJob;
 use Andersundsehr\Storybook\Service\ArgTypesService;
+use Andersundsehr\Storybook\Service\ConfigService;
 use Andersundsehr\Storybook\Transformer\Transformers;
 use Closure;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use Exception;
 use RuntimeException;
 use TYPO3Fluid\Fluid\Core\Component\ComponentDefinition;
+use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
 
 use function array_filter;
 use function array_keys;
@@ -26,8 +29,16 @@ final readonly class ComponentDataFactory
 {
     public const string SLOT_PREFIX = 'slot____';
 
-    public function transform(ComponentDefinition $componentDefinition, Transformers $transformers, RenderJob $renderJob): ComponentData
+    public function __construct(private ConfigService $configService)
     {
+    }
+
+    public function transform(
+        ComponentDefinition $componentDefinition,
+        Transformers $transformers,
+        RenderJob $renderJob,
+        RenderingContextInterface $renderingContext,
+    ): ComponentData {
         $argumentDefinitions = $componentDefinition->getArgumentDefinitions();
 
         $args = [];
@@ -35,7 +46,8 @@ final readonly class ComponentDataFactory
         $slots = [];
         foreach ($renderJob->rawArgs as $key => $value) {
             if (str_starts_with((string)$key, self::SLOT_PREFIX)) {
-                $slots[substr((string)$key, strlen(self::SLOT_PREFIX))] = static fn(): string => (string)$value;
+                $slotName = substr((string)$key, strlen(self::SLOT_PREFIX));
+                $slots[$slotName] = $this->createSlot($slotName, (string)$value, $renderingContext);
                 continue;
             }
 
@@ -84,6 +96,35 @@ final readonly class ComponentDataFactory
         return new ComponentData($args, $slots);
     }
 
+
+    /**
+     * @return Closure(): string
+     */
+    private function createSlot(string $slotName, string $content, RenderingContextInterface $renderingContext): Closure
+    {
+        if (!$this->configService->renderSlotsAsFluid()) {
+            return static fn(): string => $content;
+        }
+
+        // The slot content is a Fluid template in the scope of the story, like the children of a component tag:
+        // other components via their global namespace, nested slots, f:fragment and inline arrays work as usual.
+        return static function () use ($slotName, $content, $renderingContext): string {
+            try {
+                $parsedTemplate = $renderingContext->getTemplateParser()->getOrParseAndStoreTemplate(
+                    'storybook_slot_' . sha1($content),
+                    static fn(): string => $content,
+                );
+
+                return (string)$parsedTemplate->render($renderingContext);
+            } catch (Exception $exception) {
+                throw new RuntimeException(
+                    'Could not render the Fluid content of slot "' . $slotName . '": ' . $exception->getMessage(),
+                    4382910475,
+                    $exception
+                );
+            }
+        };
+    }
 
     private function convertToTargetType(string $targetType, mixed $value): mixed
     {

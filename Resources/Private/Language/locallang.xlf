@@ -6,6 +6,9 @@
 			<trans-unit id="excludeArguments" xml:space="preserve">
 				<source>Component Arguments to Exclude (comma separated)</source>
 			</trans-unit>
+			<trans-unit id="renderSlotsAsFluid" xml:space="preserve">
+				<source>Render slot content of stories as Fluid templates (nested components; slots are not sanitized, story authors can run any Fluid)</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>
