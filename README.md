@@ -158,6 +158,36 @@ You can Select the site and the language in the top right corner of the Storyboo
 ![Site select](./.Build/dummy-project/tests/screenshot.spec.ts-snapshots/screenshot-select-site-chromium-linux.png)
 ![Language select](./.Build/dummy-project/tests/screenshot.spec.ts-snapshots/screenshot-select-language-chromium-linux.png)
 
+### Slots: components inside stories
+
+Slot content of a story (`slot____default`, `slot____<name>`) is passed through as a sanitized string. With the extension setting `renderSlotsAsFluid` it is rendered as a Fluid template in the rendering context of the story instead, so a slot can hold another component:
+
+```typescript
+export const WithCard: StoryObj = {
+  args: {
+    slot____default: '<de:card title="Yar Pirate Ipsum" link="https://www.andersundsehr.com" />',
+  },
+};
+```
+
+`component()` builds that tag from the story of the other component, so stories reference each other instead of repeating markup:
+
+```typescript
+// .storybook/component.ts
+import { createComponent } from '@andersundsehr/storybook-typo3';
+
+export const component = createComponent(import.meta.glob('../Components/**/*.stories.ts'));
+
+// Components/Page/Page.stories.ts
+import { component } from '../../.storybook/component';
+
+export const WithCard: StoryObj = {
+  args: { slot____default: await component('de:card', 'Pirate') },
+};
+```
+
+> The setting is off by default: with it, story authors run arbitrary Fluid in the TYPO3 instance. See [Slots](https://docs.typo3.org/permalink/andersundsehr-storybook:slots) in the Getting Started Guide.
+
 ## Documentation: Where to find more information? (Links, references, tutorials)
 
 https://docs.typo3.org/permalink/andersundsehr-storybook:start
