@@ -4,6 +4,7 @@ export * from './functions/fetchRenderAction';
 export * from './functions/fetchPreviewConfig';
 export * from './functions/fetchComponent';
 export * from './functions/fetchWithUserRetry';
+export * from './functions/component';
 export * from './types/types';
 
 const url = (() => {
